@@ -11,7 +11,7 @@ namespace Dodecaplex {
 class Beflux {
 public:
   static const uint BLOCK_W = 16;
-  static const uint BLOCK_H = 16;
+  static const uint BLOCK_H = BLOCK_W;
   static const uint BLOCK_MAX = BLOCK_W * BLOCK_H;
 
   static const int CURSOR_W = -1;
@@ -32,6 +32,14 @@ public:
 
   class Block {
   public:
+
+    class Cursor {
+    public:
+      Cursor(uint i_s=0, int i_ds=CURSOR_STOP) : s(i_s), ds(i_ds) {}
+      uint s;
+      int ds;
+    };
+
     Block(void);
     Block(const byte * const src, uint count);
     Block(const char * const filename);
@@ -65,13 +73,7 @@ public:
     bool row_wrap;
 
   private:
-    class Cursor_ {
-    public:
-      Cursor_(uint i_s=0, int i_ds=CURSOR_STOP) : s(i_s), ds(i_ds) {}
-      uint s;
-      int ds;
-    } cursor_;
-
+    Cursor cursor_;
   };
 
   Beflux(void);

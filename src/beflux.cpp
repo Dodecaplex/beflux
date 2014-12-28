@@ -36,6 +36,7 @@ void Beflux::Block::clear(void) {
   for (uint i = 0; i < BLOCK_MAX; ++i) {
     data[i] = 0;
   }
+  cursor_reset();
 }
 
 void Beflux::Block::read(const byte * const src, uint count) {
@@ -224,9 +225,10 @@ void Beflux::eval_(byte op) {
   Block &out  = segment_[OUTPUT];
 
   switch(op) { // Operation :: (Stack Args) -> (Stack Returns)
-  case 0x00:
+
   default:
     break;
+
   case ' ': { // Skip Whitespace :: ( ) -> ( )
     for (uint i = 0; i < BLOCK_MAX; ++i) {
       prog.cursor_advance();
@@ -290,20 +292,237 @@ void Beflux::eval_(byte op) {
     }
   } break;
 
+  case ':': { // Duplicate :: (a) -> (a a)
+    mem.push(mem.get());
+  } break;
+
+  case ';': { // Comment :: ( ) -> ( )
+    for (uint i = 0; i < BLOCK_MAX; ++i) {
+      if (prog.get() != ';')
+        prog.cursor_advance();
+      else
+        break;
+    }
+  } break;
+
+  case '<': { // Move West :: ( ) -> ( )
+    prog.cursor_set_velocity(CURSOR_W);
+  } break;
+
+  case '=': { // Equality :: (a b) -> (a == b)
+    byte b = mem.pop();
+    byte a = mem.pop();
+    mem.push(a == b);
+  } break;
+
+  case '>': { // Move East :: ( ) -> ( )
+    prog.cursor_set_velocity(CURSOR_E);
+  } break;
+
   case '@': { // Exit :: ( ) -> ( )
     ++t_minor_;
     prog.cursor_reset();
   } break;
 
-  case 'Q': { // Quit :: (status) -> ( )
-    active_ = false;
-    status_ = mem.pop();
-    ++t_major_;
-    prog.cursor_reset();
+  case 'C': { // Subroutine Call :: (s) -> ( )
+    byte s = mem.pop();
+    mem.push(prog.cursor_get_position());
+    mem.push(prog.cursor_get_velocity());
+    mem.push(s);
+    eval_('\\');
+    eval_('J');
+    eval_('{');
+  } break;
+
+  case 'F': { // Call Bound Function :: (n) -> (F_n(this))
+    bindings_[mem.pop()](this);
+  } break;
+
+  case 'G': { // Get from Memory :: (ds) -> (mem.get(mem.cursor_.s + ds))
+    byte ds = mem.pop();
+
+    if (mem.row_wrap)
+      ds %= BLOCK_W;
+
+    if (mem.cursor_get_velocity())
+      ds *= mem.cursor_get_velocity();
+
+    mem.push(mem.get(mem.cursor_get_position() + ds));
+  } break;
+
+  case 'I': { // Load Input :: (0 "gnirts") -> ( )
+    std::string filename;
+    for (uint i = 0; i < BLOCK_W; ++i) {
+      byte c = mem.pop();
+      if (c == '\0')
+        break;
+      else if (std::isalnum(c))
+        filename.push_back(c);
+    }
+    filename += ".bfx";
+    in.load(filename.c_str());
+    eval_('@');
+  } break;
+
+  case 'J': { // Absolute Jump :: (s) -> ( )
+    prog.cursor_set_position(mem.pop());
+  } break;
+
+  case 'L': { // Loop Counter :: ( ) -> (loop_counter_++)
+    mem.push(loop_counter_++);
+  } break;
+
+  case 'M': { // Call Math Function :: (n) -> (M_n(this))
+    byte n = mem.pop();
+    switch (n) {
+    case 0x00: // NOP
+    default:
+      mem.push(n);
+      break;
+    // TODO: Implement math functions.
+    case 0x01: // Sine
+      break;
+    case 0x02: // Cosine
+      break;
+    case 0x03: // Tangent
+      break;
+    case 0x04: // Cosecant
+      break;
+    case 0x05: // Secant
+      break;
+    case 0x06: // Cotangent
+      break;
+    case 0x07: // Chord
+      break;
+    case 0x08: // Hyperbolic Sine
+      break;
+    case 0x09: // Hyperbolic Cosine
+      break;
+    case 0x0a: // Hyperbolic Tangent
+      break;
+    case 0x0b: // Hyperbolic Cosecant
+      break;
+    case 0x0c: // Hyperbolic Secant
+      break;
+    case 0x0d: // Hyperbolic Cotangent
+      break;
+    case 0x0e: // Hyperbolic Chord
+      break;
+    case 0x0f: // TODO: Some cool trig-related function...
+      break;
+    }
+  } break;
+
+  case 'N': { // Clear Memory :: ( ) -> ( )
+    mem.clear();
+    mem.cursor_reset();
+  } break;
+
+  case 'O': { // Save Output :: (0 "gnirts") -> ( )
+    std::string filename;
+    for (uint i = 0; i < BLOCK_W; ++i) {
+      byte c = mem.pop();
+      if (c == '\0')
+        break;
+      else if (std::isalnum(c))
+        filename.push_back(c);
+    }
+    filename += ".bfx";
+    out.save(filename.c_str());
+  } break;
+
+  case 'P': { // Put in Memory :: (c ds) -> ( )
+    byte ds = mem.pop();
+    byte c = mem.pop();
+
+    if (mem.row_wrap)
+      ds %= BLOCK_W;
+
+    if (mem.cursor_get_velocity())
+      ds *= mem.cursor_get_velocity();
+
+    mem.set(mem.cursor_get_position() + ds, c);
+  } break;
+
+  case 'Q': { // Hard Quit :: (status) -> ( )
+    eval_('q');
+    eval_('N');
+  } break;
+
+  case 'R': { // Subroutine Return :: ( ) -> ( )
+    eval_('}');
+    eval_('J');
+    prog.cursor_set_velocity(mem.pop());
+    prog.cursor_set_position(mem.pop());
   } break;
 
   case 'T': { // Push T Major :: ( ) -> (t_major_)
     mem.push(t_major_);
+  } break;
+
+  case 'W': { // Toggle Row Wrapping :: (n) -> ( )
+    byte n = mem.pop() % SEGMENT_MAX;
+    segment_[n].row_wrap = !segment_[n].row_wrap;
+  } break;
+
+  case '[': { // Turn Left :: ( ) -> ( )
+    switch (prog.cursor_get_velocity()) {
+    case CURSOR_W:
+      prog.cursor_set_velocity(CURSOR_S);
+      break;
+    case CURSOR_E:
+      prog.cursor_set_velocity(CURSOR_N);
+      break;
+    case CURSOR_N:
+      prog.cursor_set_velocity(CURSOR_W);
+      break;
+    case CURSOR_S:
+      prog.cursor_set_velocity(CURSOR_E);
+      break;
+    default:
+      prog.cursor_set_velocity(CURSOR_W);
+    }
+  } break;
+
+  case '\\': { // Swap :: (a b) -> (b a)
+    byte b = mem.pop();
+    byte a = mem.pop();
+    mem.push(b);
+    mem.push(a);
+  } break;
+
+  case ']': { // Turn Right :: ( ) -> ( )
+    switch (prog.cursor_get_velocity()) {
+    case CURSOR_W:
+      prog.cursor_set_velocity(CURSOR_N);
+      break;
+    case CURSOR_E:
+      prog.cursor_set_velocity(CURSOR_S);
+      break;
+    case CURSOR_N:
+      prog.cursor_set_velocity(CURSOR_E);
+      break;
+    case CURSOR_S:
+      prog.cursor_set_velocity(CURSOR_W);
+      break;
+    default:
+      prog.cursor_set_velocity(CURSOR_E);
+    }
+  } break;
+
+  case '^': { // Move North :: ( ) -> ( )
+    prog.cursor_set_velocity(CURSOR_N);
+  } break;
+
+  case '_': { // West / East Conditional :: (a) -> ( )
+    if (mem.pop())
+      prog.cursor_set_velocity(CURSOR_W);
+    else
+      prog.cursor_set_velocity(CURSOR_E);
+  } break;
+
+  case '`': { // Greater Than :: (a b) -> (a > b)
+
   } break;
 
   case 'a':
@@ -324,7 +543,19 @@ void Beflux::eval_(byte op) {
     }
   } break;
 
-  case 'i': { // Load Input :: (0 "gnirts") -> ( )
+  case 'g': { // Get from Program :: (ds) -> (prog.get(prog.cursor_.s + ds))
+    byte ds = mem.pop();
+
+    if (prog.row_wrap)
+      ds %= BLOCK_W;
+
+    if (prog.cursor_get_velocity())
+      ds *= prog.cursor_get_velocity();
+
+    mem.push(prog.get(prog.cursor_get_position() + ds));
+  } break;
+
+  case 'i': { // Load Program :: (0 "gnirts") -> ( )
     std::string filename;
     for (uint i = 0; i < BLOCK_W; ++i) {
       byte c = mem.pop();
@@ -334,12 +565,19 @@ void Beflux::eval_(byte op) {
         filename.push_back(c);
     }
     filename += ".bfx";
-    in.load(filename.c_str());
+    prog.load(filename.c_str());
     eval_('@');
   } break;
 
-  case 'j': { // Relative Jump :: (s) -> ( )
+  case 'j': { // Relative Jump :: (ds) -> ( )
     byte ds = mem.pop();
+
+    if (prog.row_wrap)
+      ds %= BLOCK_W;
+
+    if (prog.cursor_get_velocity())
+      ds *= prog.cursor_get_velocity();
+
     if (ds)
       prog.cursor_set_position(prog.cursor_get_position() + ds);
   } break;
@@ -356,15 +594,19 @@ void Beflux::eval_(byte op) {
   } break;
 
   case 'n': { // Clear Row of Memory :: ( ) -> ( )
-    uint row_length = mem.row_wrap ? BLOCK_W : BLOCK_MAX;
-    for (uint i = 0; i < row_length; ++i) {
-      mem.set(0x00);
-      mem.cursor_advance();
+    if (mem.row_wrap) {
+      for (uint i = 0; i < BLOCK_W; ++i) {
+        mem.set(0x00);
+        mem.cursor_advance();
+      }
     }
-    mem.cursor_set_position(0);
+    else {
+      mem.clear();
+    }
+    mem.cursor_reset();
   } break;
 
-  case 'o': { // Save Output :: (0 "gnirts") -> ( )
+  case 'o': { // Save Program :: (0 "gnirts") -> ( )
     std::string filename;
     for (uint i = 0; i < BLOCK_W; ++i) {
       byte c = mem.pop();
@@ -374,11 +616,63 @@ void Beflux::eval_(byte op) {
         filename.push_back(c);
     }
     filename += ".bfx";
-    out.save(filename.c_str());
+    prog.save(filename.c_str());
+  } break;
+
+  case 'p': { // Put in Program :: (c ds) -> ( )
+    byte ds = mem.pop();
+    byte c = mem.pop();
+
+    if (prog.row_wrap)
+      ds %= BLOCK_W;
+
+    if (prog.cursor_get_velocity())
+      ds *= prog.cursor_get_velocity();
+
+    prog.set(prog.cursor_get_position() + ds, c);
+  } break;
+
+  case 'q': { // Quit :: (status) -> ( )
+    active_ = false;
+    status_ = mem.pop();
+    ++t_major_;
+    prog.cursor_reset();
+  } break;
+
+  case 'r': { // Reflect :: ( ) -> ( )
+    prog.cursor_set_velocity(prog.cursor_get_velocity() * -1);
+  } break;
+
+  case 's': { // Store in Program :: (c) -> ( )
+    byte ds = prog.cursor_get_position() + prog.cursor_get_velocity();
+
+    if (prog.row_wrap)
+      ds %= BLOCK_W;
+
+    prog.set(ds, mem.pop());
   } break;
 
   case 't': { // Push T Minor :: ( ) -> (t_minor_)
     mem.push(t_minor_);
+  } break;
+
+  case 'v': { // Move South :: ( ) - > ( )
+    prog.cursor_set_velocity(CURSOR_S);
+  } break;
+
+  case '{': { // Next Memory Stack Frame :: ( ) -> ( )
+    mem.cursor_set_position(mem.cursor_get_position() + BLOCK_W);
+  } break;
+
+  case '|': { // North / South Conditional :: (a) -> ( )
+    if (mem.pop())
+      prog.cursor_set_velocity(CURSOR_N);
+    else
+      prog.cursor_set_velocity(CURSOR_S);
+  } break;
+
+  case '}': { // Previous Memory Stack Frame :: ( ) -> ( )
+    mem.cursor_set_position(mem.cursor_get_position() - BLOCK_W);
   } break;
 
   // TODO: Implement even more operators.
