@@ -1,4 +1,4 @@
 beflux
 ======
 
-Embeddable Befunge-like interpreter.
+Embeddable Befunge-like interpreter. (WIP)
