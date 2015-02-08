@@ -3,12 +3,16 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <cstdlib>
+#include <cmath>
 #include <fstream>
 #include <string>
 
 #include "beflux.h"
 
 namespace Dodecaplex {
+
+static const double PI = std::acos(-1.0);
+static const double TAU = 2 * PI;
 
 ////////////////////////////////////////////////////////////////////////////////
 // Beflux::Block Public Methods
@@ -21,7 +25,7 @@ Beflux::Block::Block(void) {
 }
 
 // Initialize from Array
-Beflux::Block::Block(const byte * const src, uint count) {
+Beflux::Block::Block(const unsigned char * const src, unsigned int count) {
   Block();
   read(src, count);
 }
@@ -33,29 +37,29 @@ Beflux::Block::Block(const char * const filename) {
 }
 
 void Beflux::Block::clear(void) {
-  for (uint i = 0; i < BLOCK_MAX; ++i) {
+  for (unsigned int i = 0; i < BLOCK_MAX; ++i) {
     data[i] = 0;
   }
   cursor_reset();
 }
 
-void Beflux::Block::read(const byte * const src, uint count) {
-  for (uint i = 0; i < count && i < BLOCK_MAX; ++i) {
+void Beflux::Block::read(const unsigned char * const src, unsigned int count) {
+  for (unsigned int i = 0; i < count && i < BLOCK_MAX; ++i) {
     data[i] = src[i];
   }
 }
 
-void Beflux::Block::write(byte * const dst, uint count) const {
-  for (uint i = 0; i < count && i < BLOCK_MAX; ++i) {
+void Beflux::Block::write(unsigned char * const dst, unsigned int count) const {
+  for (unsigned int i = 0; i < count && i < BLOCK_MAX; ++i) {
     dst[i] = data[i];
   }
 }
 
 void Beflux::Block::load(const char * const filename) {
   std::ifstream fin(filename);
-  for (uint i = 0; i < BLOCK_MAX; ++i) {
+  for (unsigned int i = 0; i < BLOCK_MAX; ++i) {
     if (fin.good())
-      data[i] = byte(fin.get());
+      data[i] = (unsigned char)(fin.get());
     else
       data[i] = 0;
   }
@@ -63,88 +67,88 @@ void Beflux::Block::load(const char * const filename) {
 
 void Beflux::Block::save(const char * const filename) const {
   std::ofstream fout(filename);
-  for (uint i = 0; i < BLOCK_MAX; ++i) {
+  for (unsigned int i = 0; i < BLOCK_MAX; ++i) {
     fout << data[i];
   }
 }
 
-void Beflux::Block::set(byte value) {
+void Beflux::Block::set(unsigned char value) {
   data[cursor_.s] = value;
 }
 
-void Beflux::Block::set(uint s, byte value) {
-  s = wrap(s, 0, BLOCK_MAX);
+void Beflux::Block::set(unsigned int s, unsigned char value) {
+  s %= BLOCK_MAX;
   data[s] = value;
 }
 
-void Beflux::Block::set(uint x, uint y, byte value) {
-  x = wrap(x, 0, BLOCK_W);
-  y = wrap(y, 0, BLOCK_H);
+void Beflux::Block::set(unsigned int x, unsigned int y, unsigned char value) {
+  x %= BLOCK_W;
+  y %= BLOCK_H;
   data[x + BLOCK_W * y] = value;
 }
 
-byte Beflux::Block::get(void) const {
+unsigned char Beflux::Block::get(void) const {
   return data[cursor_.s];
 }
 
-byte Beflux::Block::get(uint s) const {
-  s = wrap(s, 0, BLOCK_MAX);
+unsigned char Beflux::Block::get(unsigned int s) const {
+  s %= BLOCK_MAX;
   return data[s];
 }
 
-byte Beflux::Block::get(uint x, uint y) const {
-  x = wrap(x, 0, BLOCK_W);
-  y = wrap(y, 0, BLOCK_H);
+unsigned char Beflux::Block::get(unsigned int x, unsigned int y) const {
+  x %= BLOCK_W;
+  y %= BLOCK_H;
   return data[x + BLOCK_W * y];
 }
 
-void Beflux::Block::push(byte x) {
+void Beflux::Block::push(unsigned char x) {
   set(x);
   cursor_advance();
 }
 
-byte Beflux::Block::pop(void) {
+unsigned char Beflux::Block::pop(void) {
   cursor_backtrack();
-  byte x = get();
+  auto x = get();
   set(0);
   return x;
 }
 
-void Beflux::Block::cursor_set_position(uint s) {
-  cursor_.s = wrap(s, 0, BLOCK_MAX);
+void Beflux::Block::cursor_set_position(unsigned int s) {
+  cursor_.s = s % BLOCK_MAX;
 }
 
-void Beflux::Block::cursor_set_velocity(int ds) {
-  cursor_.ds = wrap(ds, 0, BLOCK_MAX);
+void Beflux::Block::cursor_set_velocity(unsigned int ds) {
+  cursor_.ds = ds;
 }
 
-uint Beflux::Block::cursor_get_position(void) const {
+unsigned int Beflux::Block::cursor_get_position(void) const {
   return cursor_.s;
 }
 
-int Beflux::Block::cursor_get_velocity(void) const {
+unsigned int Beflux::Block::cursor_get_velocity(void) const {
   return cursor_.ds;
 }
 
 void Beflux::Block::cursor_advance(void) {
   if (row_wrap) {
-    uint sx = wrap(cursor_.s + cursor_.ds % BLOCK_W, 0, BLOCK_W);
-    uint sy = wrap(cursor_.s + cursor_.ds / BLOCK_W, 0, BLOCK_H);
+    unsigned int sx = (cursor_.s + cursor_.ds % BLOCK_W) % BLOCK_W;
+    unsigned int sy = (cursor_.s + cursor_.ds / BLOCK_W) % BLOCK_H;
     cursor_.s = sx + BLOCK_W * sy;
   }
   else {
-    cursor_.s = wrap(cursor_.s + cursor_.ds, 0, BLOCK_MAX);
+    cursor_.s = (cursor_.s + cursor_.ds) % BLOCK_MAX;
   }
 }
 
 void Beflux::Block::cursor_backtrack(void) {
   if (row_wrap) {
-    uint sx = wrap(cursor_.s - cursor_.ds % BLOCK_W, 0, BLOCK_W);
-    uint sy = wrap(cursor_.s - cursor_.ds / BLOCK_W, 0, BLOCK_H);
+    unsigned int sx = (cursor_.s + cursor_.ds % BLOCK_W) % BLOCK_W;
+    unsigned int sy = (cursor_.s + cursor_.ds / BLOCK_W) % BLOCK_H;
     cursor_.s = sx + BLOCK_W * sy;
   }
   else {
-    cursor_.s = wrap(cursor_.s - cursor_.ds, 0, BLOCK_MAX);
+    cursor_.s = (cursor_.s + cursor_.ds) % BLOCK_MAX;
   }
 }
 
@@ -185,7 +189,7 @@ Beflux::Block *Beflux::output(void) {
   return &segment_[OUTPUT];
 }
 
-byte Beflux::run(void) {
+unsigned char Beflux::run(void) {
   active_ = true;
   while (active_) {
     if (pre_update_ != nullptr)
@@ -199,14 +203,42 @@ byte Beflux::run(void) {
   return status_;
 }
 
-void Beflux::bind(uint index, void (*binding)(Beflux *)) {
-  index = wrap(index, 0, BINDING_MAX);
+void Beflux::bind(unsigned int index, void (*binding)(Beflux *)) {
+  index %= BINDING_MAX;
   bindings_[index] = binding;
 }
 
 void Beflux::hook(void (*pre)(Beflux *), void (*post)(Beflux *)) {
   pre_update_ = pre;
   post_update_ = post;
+}
+
+unsigned char Beflux::sin(unsigned char x) {
+  return 0x80 + 0x7f * std::sin(bamtorad(x));
+}
+
+unsigned char Beflux::cos(unsigned char x) {
+  return 0x80 + 0x7f * std::cos(bamtorad(x));
+}
+
+unsigned char Beflux::tan(unsigned char x) {
+  return sin(x) / cos(x);
+}
+
+unsigned char Beflux::degtobam(double degs) {
+  return 256 * degs / 360.0;
+}
+
+double Beflux::bamtodeg(unsigned char bams) {
+  return 360.0 * bams / 256.0;
+}
+
+unsigned char Beflux::radtobam(double rads) {
+  return 256 * rads / TAU;
+}
+
+double Beflux::bamtorad(unsigned char bams) {
+  return TAU * bams / 256.0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -218,7 +250,7 @@ void Beflux::update_(void) {
   segment_[PROGRAM].cursor_advance();
 }
 
-void Beflux::eval_(byte op) {
+void Beflux::eval_(unsigned char op) {
   Block &prog = segment_[PROGRAM];
   Block &mem  = segment_[MEMORY];
   Block &in   = segment_[INPUT];
@@ -226,11 +258,11 @@ void Beflux::eval_(byte op) {
 
   switch(op) { // Operation :: (Stack Args) -> (Stack Returns)
 
-  default:
+    default: // NOP :: ( ) -> ( )
     break;
 
   case ' ': { // Skip Whitespace :: ( ) -> ( )
-    for (uint i = 0; i < BLOCK_MAX; ++i) {
+    for (unsigned int i = 0; i < BLOCK_MAX; ++i) {
       prog.cursor_advance();
       if (prog.get() != ' ')
         break;
@@ -238,22 +270,22 @@ void Beflux::eval_(byte op) {
   } break;
 
   case '*': { // Multiply :: (a b) -> (a * b)
-    byte b = mem.pop();
-    byte a = mem.pop();
+    auto b = mem.pop();
+    auto a = mem.pop();
     mem.push(a * b);
   } break;
 
   // case ','
 
   case '+': { // Add :: (a b) -> (a + b)
-    byte b = mem.pop();
-    byte a = mem.pop();
+    auto b = mem.pop();
+    auto a = mem.pop();
     mem.push(a + b);
   } break;
 
   case '-': { // Subtract :: (a b) -> (a - b)
-    byte b = mem.pop();
-    byte a = mem.pop();
+    auto b = mem.pop();
+    auto a = mem.pop();
     mem.push(a - b);
   } break;
 
@@ -262,8 +294,8 @@ void Beflux::eval_(byte op) {
   } break;
 
   case '/': { // Divide :: (a b) -> (a / b)
-    byte b = mem.pop();
-    byte a = mem.pop();
+    auto b = mem.pop();
+    auto a = mem.pop();
     if (b)
       mem.push(a / b);
     else
@@ -297,7 +329,7 @@ void Beflux::eval_(byte op) {
   } break;
 
   case ';': { // Comment :: ( ) -> ( )
-    for (uint i = 0; i < BLOCK_MAX; ++i) {
+    for (unsigned int i = 0; i < BLOCK_MAX; ++i) {
       if (prog.get() != ';')
         prog.cursor_advance();
       else
@@ -310,8 +342,8 @@ void Beflux::eval_(byte op) {
   } break;
 
   case '=': { // Equality :: (a b) -> (a == b)
-    byte b = mem.pop();
-    byte a = mem.pop();
+    auto b = mem.pop();
+    auto a = mem.pop();
     mem.push(a == b);
   } break;
 
@@ -325,7 +357,7 @@ void Beflux::eval_(byte op) {
   } break;
 
   case 'C': { // Subroutine Call :: (s) -> ( )
-    byte s = mem.pop();
+    auto s = mem.pop();
     mem.push(prog.cursor_get_position());
     mem.push(prog.cursor_get_velocity());
     mem.push(s);
@@ -339,7 +371,7 @@ void Beflux::eval_(byte op) {
   } break;
 
   case 'G': { // Get from Memory :: (ds) -> (mem.get(mem.cursor_.s + ds))
-    byte ds = mem.pop();
+    auto ds = mem.pop();
 
     if (mem.row_wrap)
       ds %= BLOCK_W;
@@ -352,8 +384,8 @@ void Beflux::eval_(byte op) {
 
   case 'I': { // Load Input :: (0 "gnirts") -> ( )
     std::string filename;
-    for (uint i = 0; i < BLOCK_W; ++i) {
-      byte c = mem.pop();
+    for (unsigned int i = 0; i < BLOCK_W; ++i) {
+      auto c = mem.pop();
       if (c == '\0')
         break;
       else if (std::isalnum(c))
@@ -372,44 +404,14 @@ void Beflux::eval_(byte op) {
     mem.push(loop_counter_++);
   } break;
 
-  case 'M': { // Call Math Function :: (n) -> (M_n(this))
-    byte n = mem.pop();
+  case 'M': { // Call Math Function :: (n x) -> (M_n(x))
+    auto n = mem.pop();
     switch (n) {
-    case 0x00: // NOP
-    default:
-      mem.push(n);
-      break;
-    // TODO: Implement math functions.
-    case 0x01: // Sine
-      break;
-    case 0x02: // Cosine
-      break;
-    case 0x03: // Tangent
-      break;
-    case 0x04: // Cosecant
-      break;
-    case 0x05: // Secant
-      break;
-    case 0x06: // Cotangent
-      break;
-    case 0x07: // Chord
-      break;
-    case 0x08: // Hyperbolic Sine
-      break;
-    case 0x09: // Hyperbolic Cosine
-      break;
-    case 0x0a: // Hyperbolic Tangent
-      break;
-    case 0x0b: // Hyperbolic Cosecant
-      break;
-    case 0x0c: // Hyperbolic Secant
-      break;
-    case 0x0d: // Hyperbolic Cotangent
-      break;
-    case 0x0e: // Hyperbolic Chord
-      break;
-    case 0x0f: // TODO: Some cool trig-related function...
-      break;
+    case 0x00:
+    default: mem.pop(); break;
+    case 0x01: mem.push(sin(mem.pop())); break;
+    case 0x02: mem.push(cos(mem.pop())); break;
+    case 0x03: mem.push(tan(mem.pop())); break;
     }
   } break;
 
@@ -420,8 +422,8 @@ void Beflux::eval_(byte op) {
 
   case 'O': { // Save Output :: (0 "gnirts") -> ( )
     std::string filename;
-    for (uint i = 0; i < BLOCK_W; ++i) {
-      byte c = mem.pop();
+    for (unsigned int i = 0; i < BLOCK_W; ++i) {
+      auto c = mem.pop();
       if (c == '\0')
         break;
       else if (std::isalnum(c))
@@ -432,8 +434,8 @@ void Beflux::eval_(byte op) {
   } break;
 
   case 'P': { // Put in Memory :: (c ds) -> ( )
-    byte ds = mem.pop();
-    byte c = mem.pop();
+    auto ds = mem.pop();
+    auto c = mem.pop();
 
     if (mem.row_wrap)
       ds %= BLOCK_W;
@@ -461,7 +463,7 @@ void Beflux::eval_(byte op) {
   } break;
 
   case 'W': { // Toggle Row Wrapping :: (n) -> ( )
-    byte n = mem.pop() % SEGMENT_MAX;
+    auto n = mem.pop() % SEGMENT_MAX;
     segment_[n].row_wrap = !segment_[n].row_wrap;
   } break;
 
@@ -485,8 +487,8 @@ void Beflux::eval_(byte op) {
   } break;
 
   case '\\': { // Swap :: (a b) -> (b a)
-    byte b = mem.pop();
-    byte a = mem.pop();
+    auto b = mem.pop();
+    auto a = mem.pop();
     mem.push(b);
     mem.push(a);
   } break;
@@ -544,7 +546,7 @@ void Beflux::eval_(byte op) {
   } break;
 
   case 'g': { // Get from Program :: (ds) -> (prog.get(prog.cursor_.s + ds))
-    byte ds = mem.pop();
+    auto ds = mem.pop();
 
     if (prog.row_wrap)
       ds %= BLOCK_W;
@@ -557,8 +559,8 @@ void Beflux::eval_(byte op) {
 
   case 'i': { // Load Program :: (0 "gnirts") -> ( )
     std::string filename;
-    for (uint i = 0; i < BLOCK_W; ++i) {
-      byte c = mem.pop();
+    for (unsigned int i = 0; i < BLOCK_W; ++i) {
+      auto c = mem.pop();
       if (c == '\0')
         break;
       else if (std::isalnum(c))
@@ -570,7 +572,7 @@ void Beflux::eval_(byte op) {
   } break;
 
   case 'j': { // Relative Jump :: (ds) -> ( )
-    byte ds = mem.pop();
+    auto ds = mem.pop();
 
     if (prog.row_wrap)
       ds %= BLOCK_W;
@@ -583,10 +585,10 @@ void Beflux::eval_(byte op) {
   } break;
 
   case 'k': { // Iterate :: (k) -> ( )
-    byte k = mem.pop();
+    auto k = mem.pop();
     prog.cursor_advance();
     if (k) {
-      for (uint i = 0; i < k; ++i) {
+      for (unsigned int i = 0; i < k; ++i) {
         eval_(prog.get());
       }
     }
@@ -595,7 +597,7 @@ void Beflux::eval_(byte op) {
 
   case 'n': { // Clear Row of Memory :: ( ) -> ( )
     if (mem.row_wrap) {
-      for (uint i = 0; i < BLOCK_W; ++i) {
+      for (unsigned int i = 0; i < BLOCK_W; ++i) {
         mem.set(0x00);
         mem.cursor_advance();
       }
@@ -608,8 +610,8 @@ void Beflux::eval_(byte op) {
 
   case 'o': { // Save Program :: (0 "gnirts") -> ( )
     std::string filename;
-    for (uint i = 0; i < BLOCK_W; ++i) {
-      byte c = mem.pop();
+    for (unsigned int i = 0; i < BLOCK_W; ++i) {
+      auto c = mem.pop();
       if (c == '\0')
         break;
       else if (std::isalnum(c))
@@ -620,8 +622,8 @@ void Beflux::eval_(byte op) {
   } break;
 
   case 'p': { // Put in Program :: (c ds) -> ( )
-    byte ds = mem.pop();
-    byte c = mem.pop();
+    auto ds = mem.pop();
+    auto c = mem.pop();
 
     if (prog.row_wrap)
       ds %= BLOCK_W;
@@ -644,7 +646,7 @@ void Beflux::eval_(byte op) {
   } break;
 
   case 's': { // Store in Program :: (c) -> ( )
-    byte ds = prog.cursor_get_position() + prog.cursor_get_velocity();
+    unsigned char ds = prog.cursor_get_position() + prog.cursor_get_velocity();
 
     if (prog.row_wrap)
       ds %= BLOCK_W;

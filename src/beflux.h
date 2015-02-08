@@ -4,21 +4,19 @@
 
 #pragma once
 
-#include "util.h"
-
 namespace Dodecaplex {
 
 class Beflux {
 public:
-  static const uint BLOCK_W = 16;
-  static const uint BLOCK_H = BLOCK_W;
-  static const uint BLOCK_MAX = BLOCK_W * BLOCK_H;
+  static const unsigned int BLOCK_W = 16;
+  static const unsigned int BLOCK_H = 16;
+  static const unsigned int BLOCK_MAX = BLOCK_W * BLOCK_H;
 
-  static const int CURSOR_W = -1;
-  static const int CURSOR_E = +1;
-  static const int CURSOR_N = -BLOCK_W;
-  static const int CURSOR_S = +BLOCK_W;
-  static const int CURSOR_STOP = 0;
+  static const unsigned int CURSOR_W = -1;
+  static const unsigned int CURSOR_E = +1;
+  static const unsigned int CURSOR_N = -BLOCK_W;
+  static const unsigned int CURSOR_S = +BLOCK_W;
+  static const unsigned int CURSOR_STOP = 0;
 
   static enum {
     PROGRAM = 0,
@@ -28,48 +26,48 @@ public:
     SEGMENT_MAX
   } segment_id;
 
-  static const uint BINDING_MAX = 256;
+  static const unsigned int BINDING_MAX = 256;
 
   class Block {
   public:
 
     class Cursor {
     public:
-      Cursor(uint i_s=0, int i_ds=CURSOR_STOP) : s(i_s), ds(i_ds) {}
-      uint s;
-      int ds;
+      Cursor(unsigned int i_s=0, int i_ds=CURSOR_STOP) : s(i_s), ds(i_ds) {}
+      unsigned int s;
+      unsigned int ds;
     };
 
     Block(void);
-    Block(const byte * const src, uint count);
+    Block(const unsigned char * const src, unsigned int count);
     Block(const char * const filename);
 
     // TODO: read / write from rect in src
     void clear(void);
-    void read(const byte * const src, uint count);
-    void write(byte * const dst, uint count) const;
+    void read(const unsigned char * const src, unsigned int count);
+    void write(unsigned char * const dst, unsigned int count) const;
     void load(const char * const filename);
     void save(const char * const filename) const;
 
-    void set(byte value);
-    void set(uint s, byte value);
-    void set(uint x, uint y, byte value);
-    byte get(void) const;
-    byte get(uint s) const;
-    byte get(uint x, uint y) const;
+    void set(unsigned char value);
+    void set(unsigned int s, unsigned char value);
+    void set(unsigned int x, unsigned int y, unsigned char value);
+    unsigned char get(void) const;
+    unsigned char get(unsigned int s) const;
+    unsigned char get(unsigned int x, unsigned int y) const;
 
-    void push(byte x);
-    byte pop(void);
+    void push(unsigned char x);
+    unsigned char pop(void);
 
-    void cursor_set_position(uint s);
-    void cursor_set_velocity(int ds);
-    uint cursor_get_position(void) const;
-    int  cursor_get_velocity(void) const;
+    void cursor_set_position(unsigned int s);
+    void cursor_set_velocity(unsigned int ds);
+    unsigned int cursor_get_position(void) const;
+    unsigned int cursor_get_velocity(void) const;
     void cursor_advance(void);
     void cursor_backtrack(void);
     void cursor_reset(void);
 
-    byte data[BLOCK_MAX];
+    unsigned char data[BLOCK_MAX];
     bool row_wrap;
 
   private:
@@ -83,26 +81,36 @@ public:
   Block *input(void);
   Block *output(void);
 
-  byte run(void);
+  unsigned char run(void);
 
-  void bind(uint index, void (*binding)(Beflux *)=nullptr);
+  void bind(unsigned int index, void (*binding)(Beflux *)=nullptr);
   void hook(void (*pre)(Beflux *)=nullptr, void (*post)(Beflux *)=nullptr);
+
+  // Math Functions
+  static unsigned char sin(unsigned char x); // 0x01
+  static unsigned char cos(unsigned char x); // 0x02
+  static unsigned char tan(unsigned char x); // 0x03
+
+  static unsigned char degtobam(double degs);
+  static double bamtodeg(unsigned char bams);
+  static unsigned char radtobam(double rads);
+  static double bamtorad(unsigned char bams);
 
 private:
   Block segment_[SEGMENT_MAX];
 
   bool active_;
-  byte status_;
+  unsigned char status_;
 
   bool string_mode_;
   bool value_ready_;
-  byte value_;
-  byte t_major_;
-  byte t_minor_;
-  byte loop_counter_;
+  unsigned char value_;
+  unsigned char t_major_;
+  unsigned char t_minor_;
+  unsigned char loop_counter_;
 
   void update_(void);
-  void eval_(byte op);
+  void eval_(unsigned char op);
 
   void (*bindings_[BINDING_MAX])(Beflux *);
   void (*pre_update_)(Beflux *);
