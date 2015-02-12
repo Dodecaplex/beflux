@@ -3,118 +3,86 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #pragma once
+#include <cstdint>
+#include <iostream>
+#include <fstream>
+#include <stack>
+#include <utility>
+#include <string>
 
 namespace Dodecaplex {
 
-class Beflux {
-public:
-  static const unsigned int BLOCK_W = 16;
-  static const unsigned int BLOCK_H = 16;
-  static const unsigned int BLOCK_MAX = BLOCK_W * BLOCK_H;
+struct Beflux {
+  Beflux(void);
+  ~Beflux(void);
 
-  static const unsigned int CURSOR_W = -1;
-  static const unsigned int CURSOR_E = +1;
-  static const unsigned int CURSOR_N = -BLOCK_W;
-  static const unsigned int CURSOR_S = +BLOCK_W;
-  static const unsigned int CURSOR_STOP = 0;
+  uint8_t run(void);
+  void io(std::istream *in, std::ostream *out);
+  void hook(void (*pre)(Beflux &), void (*post)(Beflux &));
+  void bind(uint8_t index, void (*binding)(Beflux &)=nullptr);
 
-  static enum {
-    PROGRAM = 0,
-    MEMORY,
-    INPUT,
-    OUTPUT,
-    SEGMENT_MAX
-  } segment_id;
+  struct Program {
+    Program(void);
 
-  static const unsigned int BINDING_MAX = 256;
-
-  class Block {
-  public:
-
-    class Cursor {
-    public:
-      Cursor(unsigned int i_s=0, int i_ds=CURSOR_STOP) : s(i_s), ds(i_ds) {}
-      unsigned int s;
-      unsigned int ds;
-    };
-
-    Block(void);
-    Block(const unsigned char * const src, unsigned int count);
-    Block(const char * const filename);
-
-    // TODO: read / write from rect in src
-    void clear(void);
-    void read(const unsigned char * const src, unsigned int count);
-    void write(unsigned char * const dst, unsigned int count) const;
+    void read(const uint8_t * const src, uint8_t width, uint8_t height);
     void load(const char * const filename);
-    void save(const char * const filename) const;
+    void clear(void);
 
-    void set(unsigned char value);
-    void set(unsigned int s, unsigned char value);
-    void set(unsigned int x, unsigned int y, unsigned char value);
-    unsigned char get(void) const;
-    unsigned char get(unsigned int s) const;
-    unsigned char get(unsigned int x, unsigned int y) const;
+    uint8_t get(uint8_t x, uint8_t y) const;
+    void set(uint8_t x, uint8_t y, uint8_t value);
 
-    void push(unsigned char x);
-    unsigned char pop(void);
+    uint8_t width(void) const;
+    uint8_t height(void) const;
+    uint16_t size(void) const;
 
-    void cursor_set_position(unsigned int s);
-    void cursor_set_velocity(unsigned int ds);
-    unsigned int cursor_get_position(void) const;
-    unsigned int cursor_get_velocity(void) const;
-    void cursor_advance(void);
-    void cursor_backtrack(void);
-    void cursor_reset(void);
-
-    unsigned char data[BLOCK_MAX];
-    bool row_wrap;
+    friend std::ostream &operator<<(std::ostream &os, const Program &rhs);
 
   private:
-    Cursor cursor_;
+    uint8_t *data_;
+    uint8_t width_;
+    uint8_t height_;
+
+    void resize_(uint8_t width, uint8_t height);
+
+    friend class Beflux;
   };
 
-  Beflux(void);
-
-  Block *program(void);
-  Block *memory(void);
-  Block *input(void);
-  Block *output(void);
-
-  unsigned char run(void);
-
-  void bind(unsigned int index, void (*binding)(Beflux *)=nullptr);
-  void hook(void (*pre)(Beflux *)=nullptr, void (*post)(Beflux *)=nullptr);
-
-  // Math Functions
-  static unsigned char sin(unsigned char x); // 0x01
-  static unsigned char cos(unsigned char x); // 0x02
-  static unsigned char tan(unsigned char x); // 0x03
-
-  static unsigned char degtobam(double degs);
-  static double bamtodeg(unsigned char bams);
-  static unsigned char radtobam(double rads);
-  static double bamtorad(unsigned char bams);
+  Program &program(uint8_t index);
+  uint8_t &current(void);
 
 private:
-  Block segment_[SEGMENT_MAX];
-
-  bool active_;
-  unsigned char status_;
-
-  bool string_mode_;
-  bool value_ready_;
-  unsigned char value_;
-  unsigned char t_major_;
-  unsigned char t_minor_;
-  unsigned char loop_counter_;
-
   void update_(void);
-  void eval_(unsigned char op);
+  void advance_(void);
+  void push_(uint8_t value);
+  uint8_t pop_(void);
+  void eval_(uint8_t op);
 
-  void (*bindings_[BINDING_MAX])(Beflux *);
-  void (*pre_update_)(Beflux *);
-  void (*post_update_)(Beflux *);
+  Program progs_[UINT8_MAX];
+  uint8_t current_;
+
+  uint8_t x_;
+  uint8_t dx_;
+  uint8_t y_;
+  uint8_t dy_;
+
+  std::stack<std::pair<uint8_t[UINT8_MAX], uint8_t>> mem_;
+
+  std::istream *in_;
+  std::ostream *out_;
+
+  uint8_t active_;
+  uint8_t status_;
+  uint8_t mode_;
+  uint8_t value_;
+  uint8_t value_ready;
+  uint8_t t_minor_;
+  uint8_t t_major_;
+  uint8_t loop_count_;
+  uint16_t tick_;
+
+  void (*pre_)(Beflux &);
+  void (*post_)(Beflux &);
+  void (*bindings_[UINT8_MAX])(Beflux &);
 };
 
 } // namespace Dodecaplex

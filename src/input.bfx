@@ -1,0 +1,7 @@
+:: input.bfx :: A Beflux test program - Tony Chiodo - 2/11/2015
+10 5
+short
+a-very-long-line!!!
+
+12345678
+9abcdef!
