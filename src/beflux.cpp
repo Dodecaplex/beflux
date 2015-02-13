@@ -1,11 +1,16 @@
-// :: beflux.cpp :: 12/10/2014
-// Tony Chiodo - http://dodecaplex.net
-////////////////////////////////////////////////////////////////////////////////
+/*!
+ * @file beflux.cpp
+ * @date 12/10/2014
+ * @author Tony Chiodo (http://dodecaplex.net)
+ */
 
 #include "beflux.h"
 
 namespace Dodecaplex {
 
+/*!
+ * \brief Beflux constructor.
+ */
 Beflux::Beflux(void) {
   current_ = 0;
   x_ = 0;
@@ -21,12 +26,19 @@ Beflux::Beflux(void) {
   for (auto &i: bindings_) i = nullptr;
 }
 
+/*!
+ * \brief Beflux destructor.
+ */
 Beflux::~Beflux(void) {
   for (auto &i: progs_) {
     i.clear();
   }
 }
 
+/*!
+ * \brief Enters the interpreter's main loop.
+ * \return The exit status returned by the Beflux 'Q' or 'q' operators.
+ */
 uint8_t Beflux::run(void) {
   active_ = true;
   while (active_) { // MAIN LOOP
@@ -37,25 +49,49 @@ uint8_t Beflux::run(void) {
   return status_;
 }
 
+/*!
+ * \brief Designates streams for interpreter I/O.
+ * \param in The address of the input stream.
+ * \param out The address of the output stream.
+ */
 void Beflux::io(std::istream *in, std::ostream *out) {
   in_ = in;
   out_ = out;
 }
 
+/*!
+ * \brief Designates pre and post-update callback functions.
+ * \param pre The function to call before updating the interpreter.
+ * \param post The function to call after updating the interpreter.
+ */
 void Beflux::hook(void (*pre)(Beflux &), void (*post)(Beflux &)) {
   pre_ = pre;
   post_ = post;
 }
 
+/*!
+ * \brief Binds a C++ function to the Beflux 'F' operator.
+ * \param index The index value to associate with the function.
+ * \param binding The function to be bound to the index.
+ */
 void Beflux::bind(uint8_t index, void (*binding)(Beflux &)) {
   bindings_[index] = binding;
 }
 
+/*!
+ * \brief Beflux Program constructor.
+ */
 Beflux::Program::Program(void) {
   data_ = nullptr;
   width_ = height_ = 0;
 }
 
+/*!
+ * \brief Reads a program from an array of symbols.
+ * \param src Pointer to source array.
+ * \param width The width of the program.
+ * \param height The height of the program.
+ */
 void Beflux::Program::read(const uint8_t * const src, uint8_t width, uint8_t height) {
   if (width_ != width || height_ != height) resize_(width, height);
   for (uint16_t i = 0; i < size(); ++i) {
@@ -63,6 +99,13 @@ void Beflux::Program::read(const uint8_t * const src, uint8_t width, uint8_t hei
   }
 }
 
+/*!
+ * \brief Loads a program from a source file.
+ *        The first line of the file is discarded.
+ *        The second line of the file specifies the program's width and height.
+ *        The remainder of the file contains the program data.
+ * \param filename The path to the source file.
+ */
 void Beflux::Program::load(const char * const filename) {
   std::string str;
   std::ifstream fin(filename);
@@ -92,6 +135,9 @@ void Beflux::Program::load(const char * const filename) {
   }
 }
 
+/*!
+ * \brief Frees the program's data.
+ */
 void Beflux::Program::clear(void) {
   if (data_ != nullptr) {
     delete [] data_;
@@ -100,20 +146,52 @@ void Beflux::Program::clear(void) {
   }
 }
 
+/*!
+ * \brief Gets a single symbol from the program data.
+ * \param x The x position of the symbol.
+ * \param y The y position of the symbol.
+ * \return The symbol at the specified position.
+ */
 uint8_t Beflux::Program::get(uint8_t x, uint8_t y) const {
   if (data_ == nullptr) return 0;
   return data_[x + y * width_];
 }
 
+/*!
+ * \brief Sets a single symbol in the program data to the specified value.
+ * \param x The x position of the symbol.
+ * \param y The y position of the symbol.
+ * \param value The new value of the symbol.
+ */
 void Beflux::Program::set(uint8_t x, uint8_t y, uint8_t value) {
   if (data_ == nullptr) return;
   data_[x + y * width_] = value;
 }
 
+/*!
+ * \brief Gets the width of the program.
+ * \return The program width.
+ */
 uint8_t Beflux::Program::width(void) const { return width_; }
+
+/*!
+ * \brief Gets the height of the program.
+ * \return The program height.
+ */
 uint8_t Beflux::Program::height(void) const { return height_; }
+
+/*!
+ * \brief Gets the total size of the program.
+ * \return The program's width times its height.
+ */
 uint16_t Beflux::Program::size(void) const { return width_ * height_; }
 
+/*!
+ * \brief Stream insertion operator overload for printing Beflux programs.
+ * \param os The output stream to insert into.
+ * \param rhs The program to print.
+ * \return A reference to the modified output stream.
+ */
 std::ostream &operator<<(std::ostream &os, const Beflux::Program &rhs) {
   for (uint8_t j = 0; j < rhs.height_; ++j) {
     for (uint8_t i = 0; i < rhs.width_; ++i) {
@@ -124,6 +202,11 @@ std::ostream &operator<<(std::ostream &os, const Beflux::Program &rhs) {
   return os;
 }
 
+/*!
+ * \brief Private method for allocating program data.
+ * \param width The new width of the program.
+ * \param height The new height of the program.
+ */
 void Beflux::Program::resize_(uint8_t width, uint8_t height) {
   if (data_ != nullptr) delete [] data_;
   width_ = width;
@@ -131,35 +214,62 @@ void Beflux::Program::resize_(uint8_t width, uint8_t height) {
   data_ = new uint8_t[width_ * height_];
 }
 
+/*!
+ * \brief Accesses a program stored in the interpreter's memory.
+ * \param index The index of the program.
+ * \return A reference to the specified program.
+ */
 Beflux::Program &Beflux::program(uint8_t index) {
   return progs_[index];
 }
 
+/*!
+ * \brief Gets the index of the interpreter's current active program.
+ * \return The current program index.
+ */
 uint8_t &Beflux::current(void) {
   return current_;
 }
 
+/*!
+ * \brief Private method for updating the interpreter state.
+ */
 void Beflux::update_(void) {
   eval_(progs_[current_].get(x_, y_));
   advance_();
   ++tick_;
 }
 
+/*!
+ * \brief Private method for advancing the instruction pointer.
+ */
 void Beflux::advance_(void) {
   x_ = (x_ + dx_) % progs_[current_].width_;
   y_ = (y_ + dy_) % progs_[current_].height_;
 }
 
+/*!
+ * \brief Private method for pushing values to the interpreter's local stack.
+ * \param value The value to push.
+ */
 void Beflux::push_(uint8_t value) {
   mem_.top().first[mem_.top().second++] = value;
 }
 
+/*!
+ * \brief Private method for popping a value from the interpreter's local stack.
+ * \return The value from the top of the local stack.
+ */
 uint8_t Beflux::pop_(void) {
   uint8_t value = mem_.top().first[--mem_.top().second];
   mem_.top().first[mem_.top().second] = 0;
   return value;
 }
 
+/*!
+ * \brief Private method for evaluating a given symbol.
+ * \param op The operator symbol to evaluate.
+ */
 void Beflux::eval_(uint8_t op) {
   Program &prog = progs_[current_]; // Ref to current program
 

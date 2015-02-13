@@ -1,6 +1,8 @@
-// :: beflux.h :: 12/10/2014
-// Tony Chiodo - http://dodecaplex.net
-////////////////////////////////////////////////////////////////////////////////
+/*!
+ * @file beflux.h
+ * @date 12/10/2014
+ * @author Tony Chiodo (http://dodecaplex.net)
+ */
 
 #pragma once
 #include <cstdint>
@@ -12,6 +14,9 @@
 
 namespace Dodecaplex {
 
+/*!
+ * \brief An interpreter for a simple Befunge-like programming language.
+ */
 struct Beflux {
   Beflux(void);
   ~Beflux(void);
