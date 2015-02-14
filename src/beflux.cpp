@@ -13,17 +13,15 @@ namespace Dodecaplex {
  */
 Beflux::Beflux(void) {
   current_ = 0;
-  x_ = 0;
-  dx_ = 1;
-  y_ = 0;
-  dy_ = 0;
+  ip_reset_();
   in_ = &std::cin;
   out_ = &std::cout;
   active_ = status_ = mode_ = value_ = 0;
-  value_ready = t_minor_ = t_major_ = loop_count_ = 0;
+  value_ready_ = t_minor_ = t_major_ = loop_count_ = 0;
   tick_ = 0;
   pre_ = post_ = nullptr;
   for (auto &i: bindings_) i = nullptr;
+  push_frame_();
 }
 
 /*!
@@ -232,6 +230,22 @@ uint8_t &Beflux::current(void) {
 }
 
 /*!
+ * \brief Gets the instruction pointer's x position.
+ * \return The x position of the instruction pointer.
+ */
+uint8_t Beflux::getX(void) const {
+  return x_;
+}
+
+/*!
+ * \brief Gets the instruction pointer's y position.
+ * \return The y position of the instruction pointer.
+ */
+uint8_t Beflux::getY(void) const {
+  return y_;
+}
+
+/*!
  * \brief Private method for updating the interpreter state.
  */
 void Beflux::update_(void) {
@@ -246,6 +260,23 @@ void Beflux::update_(void) {
 void Beflux::advance_(void) {
   x_ = (x_ + dx_) % progs_[current_].width_;
   y_ = (y_ + dy_) % progs_[current_].height_;
+}
+
+/*!
+ * \brief Private method for resetting the instruction pointer.
+ */
+void Beflux::ip_reset_(void) {
+  x_ = y_ = 0;
+  dx_ = 1;
+  dy_ = 0;
+}
+
+void Beflux::push_frame_(void) {
+  mem_.emplace();
+}
+
+void Beflux::pop_frame_(void) {
+  if (mem_.size() > 1) mem_.pop();
 }
 
 /*!
@@ -281,6 +312,7 @@ void Beflux::eval_(uint8_t op) {
         if (prog.get(x_, y_) != ' ') break;
       }
     } break;
+
     case '!': {
     } break;
     case '"': { // STRING MODE
@@ -289,8 +321,18 @@ void Beflux::eval_(uint8_t op) {
     } break;
     case '$': {
     } break;
+
     case '%': { // MOD
+      auto b = pop_();
+      auto a = pop_();
+      if (b) {
+        push_(a % b);
+      }
+      else {
+        push_(0);
+      }
     } break;
+
     case '&': {
     } break;
     case '\'': {
@@ -299,18 +341,43 @@ void Beflux::eval_(uint8_t op) {
     } break;
     case ')': {
     } break;
+
     case '*': { // MUL
+      auto b = pop_();
+      auto a = pop_();
+      push_(a * b);
     } break;
+
     case '+': { // ADD
+      auto b = pop_();
+      auto a = pop_();
+      push_(a + b);
     } break;
+
     case ',': {
     } break;
+
     case '-': { // SUB
+      auto b = pop_();
+      auto a = pop_();
+      push_(a - b);
     } break;
-    case '.': {
+
+    case '.': { // PRINT
+      *out_ << uint16_t(pop_());
     } break;
+
     case '/': { // DIV
+      auto b = pop_();
+      auto a = pop_();
+      if (b) {
+        push_(a / b);
+      }
+      else {
+        push_(0);
+      }
     } break;
+
     case '0':
     case '1':
     case '2':
@@ -321,7 +388,17 @@ void Beflux::eval_(uint8_t op) {
     case '7':
     case '8':
     case '9': { // VALUE
+      if (value_ready_) {
+        push_((value_ << 1) | (op - '0'));
+        value_ = 0;
+        value_ready_ = false;
+      }
+      else {
+        value_ |= op - '0';
+        value_ready_ = true;
+      }
     } break;
+
     case ':': { // DUP
     } break;
     case ';': { // COMMENT
@@ -427,8 +504,14 @@ void Beflux::eval_(uint8_t op) {
     } break;
     case 'p': { // PROGPUT
     } break;
+
     case 'q': { // QUIT
+      status_ = pop_();
+      ++t_major_;
+      active_ = false;
+      ip_reset_();
     } break;
+
     case 'r': { // REFLECT
     } break;
     case 's': { // PROGSTORE
@@ -460,10 +543,15 @@ void Beflux::eval_(uint8_t op) {
 
 } // namespace Dodecaplex
 
+void ippos(Dodecaplex::Beflux &b) {
+  std::cout << uint16_t(b.getX());
+}
+
 // TEST
 int main(void) {
   Dodecaplex::Beflux b;
   b.program(0).load("input.bfx");
-  // std::cout << b.program(0) << std::endl;
+  b.hook(ippos, nullptr);
+  b.run();
   return 0;
 }

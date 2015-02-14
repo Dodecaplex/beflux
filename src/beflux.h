@@ -55,9 +55,15 @@ struct Beflux {
   Program &program(uint8_t index);
   uint8_t &current(void);
 
+  uint8_t getX(void) const;
+  uint8_t getY(void) const;
+
 private:
   void update_(void);
   void advance_(void);
+  void ip_reset_(void);
+  void push_frame_(void);
+  void pop_frame_(void);
   void push_(uint8_t value);
   uint8_t pop_(void);
   void eval_(uint8_t op);
@@ -79,7 +85,7 @@ private:
   uint8_t status_;
   uint8_t mode_;
   uint8_t value_;
-  uint8_t value_ready;
+  uint8_t value_ready_;
   uint8_t t_minor_;
   uint8_t t_major_;
   uint8_t loop_count_;
