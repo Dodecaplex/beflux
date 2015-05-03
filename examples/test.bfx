@@ -1,0 +1,39 @@
+:: test.bfx :: 04/09/15
+"fizzbuzz" 20 P "here i go!\n"o 20 00 00 X
+"goodbye\n"oQ   >"HEY\n"oQ
+&&.Q
+
+> "BYE\n"oQ
+
+
+
+
+T01MQ
+
+ffff.Q
+t::10=w. 0fM . "\n",@
+      >. 0fM . "\n",Q
+
+Ew~@
+ >oQ
+
+08k~oQ
+"HELLO\n"oQ
+&{ "HELLO" &{ " WORLD"u } "!\n"u }oQ
+
+0102030405060708 08k.Q
+"HELLO " 0400j
+
+
+
+             "WORLD!"uoQ
+
+
+
+
+"HELLO" "," " " "WORLD!\n" uuuoQ
+
+0100C 0210C    Q
+"HELLO"oR
+               v" WORLD!"oRv
+               >           Q

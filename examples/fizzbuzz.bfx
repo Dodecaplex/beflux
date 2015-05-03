@@ -1,0 +1,28 @@
+:: fizzbuzz.bfx :: 04/28/15
+t65={Q}t03%!{"Fizz"o01}t05%!{"Buzz"o01}+!{t.}0a,n@
+
+:: BUT HOW? ::
+t65={Q}
+; if t == 101:
+;   quit
+
+t03!{"Fizz"o01}
+; unless t % 3:
+;   puts "Fizz"
+;   push 1
+
+t05!{"Buzz"o01}
+; unless t % 5:
+;   puts "Buzz"
+;   push 1
+
++!{t.}
+; unless pop + pop:
+;   puts t
+ 
+0a,
+; puts "\n"
+
+n@
+; clear
+; reset
