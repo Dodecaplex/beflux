@@ -7,6 +7,8 @@ Unlike more traditional languages that execute linearly, control flow in a
 Beflux program relies on the movement of an instruction pointer in a
 two-dimensional grid of single-character operators.
 
+To compile and run unit tests: make && beflux examples/test
+
 Overview
 --------
   * Unsigned 8-bit integer arithmetic
