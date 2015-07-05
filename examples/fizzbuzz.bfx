@@ -1,5 +1,5 @@
 :: fizzbuzz.bfx :: 04/28/15
-t65={Q}t03%!{"Fizz"o01}t05%!{"Buzz"o01}+!{t.}0a,n@
+t65={Q}t03%!{"Fizz"o01}t05%!{"Buzz"o01}+!{t.}nN@
 
 :: BUT HOW? ::
 t65={Q}
@@ -20,9 +20,9 @@ t05!{"Buzz"o01}
 ; unless pop + pop:
 ;   puts t
  
-0a,
+n
 ; puts "\n"
 
-n@
+N@
 ; clear
 ; reset

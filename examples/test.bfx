@@ -1,39 +1,47 @@
-:: test.bfx :: 04/09/15
-"fizzbuzz" 20 P "here i go!\n"o 20 00 00 X
-"goodbye\n"oQ   >"HEY\n"oQ
-&&.Q
-
-> "BYE\n"oQ
-
-
-
-
-T01MQ
-
-ffff.Q
-t::10=w. 0fM . "\n",@
-      >. 0fM . "\n",Q
-
-Ew~@
- >oQ
-
-08k~oQ
-"HELLO\n"oQ
-&{ "HELLO" &{ " WORLD"u } "!\n"u }oQ
-
-0102030405060708 08k.Q
-"HELLO " 0400j
-
-
-
-             "WORLD!"uoQ
-
-
-
-
-"HELLO" "," " " "WORLD!\n" uuuoQ
-
-0100C 0210C    Q
-"HELLO"oR
-               v" WORLD!"oRv
-               >           Q
+:: test.bfx :: 07/04/2015
+":: BEFLUX :: Unit Tests"on "JMP"on 0100J ffq
+01W 0200J >"TRUE"onR >"FALSE - TERMINATING"onffq >=!{0115J}010aCR
+"POP"on ff $ "JREL"on ff 0005jqqqq$ "EQ"on 00 01 ={ffq} "NOT"on 00 00 =!{ffq} 
+"HOP"on ff #q$ "COM"on ;ffq;
+"ADD"on
+"  00 00 + 00 = "o0000+00 0131C
+"  01 01 + 02 = "o0101+02 0131C
+"  0f 01 + 10 = "o0f01+10 0131C
+"  ff 01 + 00 = "off01+00 0131C
+"SUB"on 
+"  00 00 - 00 = "o0000-00 0131C
+"  01 01 - 00 = "o0101-00 0131C
+"  10 01 - 0f = "o1001-0f 0131C
+"  00 01 - ff = "o0001-ff 0131C
+"MUL"on
+"  ff 00 * 00 = "o0000*00 0131C
+"  01 02 * 02 = "o0102*02 0131C
+"  10 0e * e0 = "o100e*e0 0131C
+"  ff ff * 01 - "offff*01 0131C
+"DIV"on
+"  10 01 / 10 = "o1001/10 0131C
+"  10 02 / 08 = "o1002/08 0131C
+"  80 ff / 00 = "o80ff/00 0131C
+"MOD"on
+"  10 10 % 00 = "o1010%00 0131C
+"  20 10 % 00 = "o2010%00 0131C
+"  2f 02 % 01 = "o2f02%01 0131C
+"OVER"on 0102 ' 01=!{ffq} 02=!{ffq} 01=!{ffq}
+"DUP"on  4480 : =!{ffq} : 44=!{ffq}
+"SWP"on  4480 \ 44=!{ffq} 80=!{ffq}
+"PSHF"on 102030 (00=!{ffq})
+"POPF"on 30={ffq} 20={ffq} 10={ffq}
+"DUPF"on 102030 K 30=!{ffq} 20=!{ffq} 10=!{ffq} ) 30=!{ffq} 20=!{ffq} 10=!{ffq}
+"DICE "o 0010D.0010D.0010D.0010D.n
+"RAND "o ZZZZ....n
+"SETP"on00000000S
+"GETP"on000000G{ffq}
+"LOOP "o>l:.10=!wn"LEND"onLl{ffq}L
+y>v     ^       <
+>h>
+"SVER"ron "JO" "IN" uon
+"WAIT"on01z
+"SETR"onff00s
+"GETR"on00gff=!{ffq}
+"CLRR"onY00g{ffq}
+":: TESTING COMPLETE ::"onQ
