@@ -10,8 +10,6 @@ two-dimensional grid of single-character operators.
 Beflux can be built as a standalone interpreter, or as a library for embedding
 in other programs. It is mostly stable, probably.
 
-v1.0
-
 Overview
 --------
   * Unsigned 8-bit integer arithmetic
