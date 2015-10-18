@@ -1,0 +1,10 @@
+:: beer.bfx :: 10/17/15
+01W 64t-!{Q}
+"0x"o 63t-. " bottle"o 63t-01=!{"s"o} " of beer on the wall."on  01z
+"0x"o 63t-. " bottle"o 63t-01=!{"s"o} " of beer."            on  01z
+"Take one down, pass it around,"                             on  01z
+"0x"o 62t-. " bottle"o 62t-01=!{"s"o} " of beer on the wall."onn 01z @
+
+:: EXERCISE FOR READER ::
+For certain numbers of beer bottles, some strings do not print correctly.
+Can you figure out why?

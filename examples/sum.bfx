@@ -1,0 +1,6 @@
+:: sum.bfx :: 10/17/15
+"Enter two bytes to add: "o &&&& +. Q
+
+:: NOTE ::
+& will replace invalid inputs with 0, and does not expect spaces between bytes.
+
